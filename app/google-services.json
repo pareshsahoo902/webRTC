@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "93942797139",
+    "firebase_url": "https://webrtcapp-50ea6-default-rtdb.firebaseio.com",
+    "project_id": "webrtcapp-50ea6",
+    "storage_bucket": "webrtcapp-50ea6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:93942797139:android:9b0a60b86669b4715a47a6",
+        "android_client_info": {
+          "package_name": "com.pharos.webrtc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "93942797139-s069u3djmb8er9bpoo9de6u9tlj6no4s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAf64NGSykKf60c83YzykdoNfgycZ2QqAY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "93942797139-s069u3djmb8er9bpoo9de6u9tlj6no4s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
