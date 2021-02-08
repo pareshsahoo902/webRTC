@@ -11,8 +11,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.pharos.webrtc.Observer.CustomPeerConnectionObserver;
+import com.pharos.webrtc.Observer.CustomSdpObserver;
+import com.pharos.webrtc.SignallingServer.SignallingClient;
 import com.pharos.webrtc.VC.VideoCallActivity;
 
+import org.json.JSONObject;
 import org.webrtc.AudioSource;
 import org.webrtc.AudioTrack;
 import org.webrtc.Camera1Enumerator;
@@ -21,10 +25,13 @@ import org.webrtc.CameraEnumerator;
 import org.webrtc.DefaultVideoDecoderFactory;
 import org.webrtc.DefaultVideoEncoderFactory;
 import org.webrtc.EglBase;
+import org.webrtc.IceCandidate;
 import org.webrtc.Logging;
 import org.webrtc.MediaConstraints;
+import org.webrtc.MediaStream;
 import org.webrtc.PeerConnection;
 import org.webrtc.PeerConnectionFactory;
+import org.webrtc.SessionDescription;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoCapturer;
@@ -34,30 +41,27 @@ import org.webrtc.VideoSink;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class SecondScreen extends AppCompatActivity {
+public class SecondScreen extends AppCompatActivity  implements  SignallingClient.SignalingInterface  {
 
     private static final int RC_CALL = 111;
-    public static final String VIDEO_TRACK_ID = "ARDAMSv0";
     public static final int VIDEO_RESOLUTION_WIDTH = 852;
     public static final int VIDEO_RESOLUTION_HEIGHT = 480;
     private static final String TAG = "SecondScreen";
     public static final int FPS = 30;
-    String roomID = "null", name = "null";
-    private TextView roomidText;
-    Boolean mute = true, videoOn = false, front_cam = true;
+    private String roomID = "null", name = "null";
+    private Boolean mute = true, videoOn = false, front_cam = true;
     private ImageView rotate_cam, mute_unmute, videoon_off, hangup, menu;
 
-    private PeerConnection peerConnection;
+    private PeerConnection localpeer;
     private EglBase rootEglBase;
-    private PeerConnectionFactory factory;
-    private VideoTrack videoTrackFromCamera;
 
-
-    PeerConnectionFactory peerConnectionFactory;
-
+    private PeerConnectionFactory peerConnectionFactory;
 
     MediaConstraints audioConstraints;
     MediaConstraints videoConstraints;
@@ -69,7 +73,14 @@ public class SecondScreen extends AppCompatActivity {
     SurfaceTextureHelper surfaceTextureHelper;
 
     private SurfaceViewRenderer surfaceView1,remotesurface;
-    private TextView local_peername,remote_peername;
+    private TextView local_peername,remote_peername,roomidText;
+
+
+    boolean gotUserMedia;
+    List<PeerConnection.IceServer> peerIceServers = new ArrayList<>();
+
+    final int ALL_PERMISSIONS_CODE = 1;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,7 +97,6 @@ public class SecondScreen extends AppCompatActivity {
 
         init();
         clickers();
-
         start();
 
     }
@@ -198,6 +208,10 @@ public class SecondScreen extends AppCompatActivity {
         rootEglBase = EglBase.create();
         surfaceView1.init(rootEglBase.getEglBaseContext(), null);
         surfaceView1.setZOrderMediaOverlay(true);
+
+        rootEglBase = EglBase.create();
+        remotesurface.init(rootEglBase.getEglBaseContext(), null);
+        remotesurface.setZOrderMediaOverlay(true);
     }
 
 
@@ -206,11 +220,11 @@ public class SecondScreen extends AppCompatActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-
         String[] perms = {Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO};
         if (EasyPermissions.hasPermissions(this, perms)) {
             Toast.makeText(this, "Granted", Toast.LENGTH_SHORT).show();
             initVideos();
+            getIceServers();
 
             //Initialize PeerConnectionFactory globals.
             PeerConnectionFactory.InitializationOptions initializationOptions =
@@ -221,7 +235,7 @@ public class SecondScreen extends AppCompatActivity {
             //Create a new PeerConnectionFactory instance - using Hardware encoder and decoder.
             PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
             DefaultVideoEncoderFactory defaultVideoEncoderFactory = new DefaultVideoEncoderFactory(
-                    rootEglBase.getEglBaseContext(),  /* enableIntelVp8Encoder */true,  /* enableH264HighProfile */true);
+                    rootEglBase.getEglBaseContext(), true,  true);
             DefaultVideoDecoderFactory defaultVideoDecoderFactory = new DefaultVideoDecoderFactory(rootEglBase.getEglBaseContext());
             peerConnectionFactory = PeerConnectionFactory.builder()
                     .setOptions(options)
@@ -229,13 +243,11 @@ public class SecondScreen extends AppCompatActivity {
                     .setVideoDecoderFactory(defaultVideoDecoderFactory)
                     .createPeerConnectionFactory();
 
-            //Now create a VideoCapturer instance.
-
+            //VideoCapturer instance.
             VideoCapturer videoCapturerAndroid;
                 videoCapturerAndroid = createCameraCapturer(new Camera1Enumerator(true));
 
-
-            //Create MediaConstraints - Will be useful for specifying video and audio constraints.
+            //Create MediaConstraints .
             audioConstraints = new MediaConstraints();
             videoConstraints = new MediaConstraints();
 
@@ -247,26 +259,67 @@ public class SecondScreen extends AppCompatActivity {
             localVideoTrack = peerConnectionFactory.createVideoTrack("100", videoSource);
 
 
-            //create an AudioSource instance
+            //AudioSource instance
             audioSource = peerConnectionFactory.createAudioSource(audioConstraints);
             localAudioTrack = peerConnectionFactory.createAudioTrack("101", audioSource);
 
             if (videoCapturerAndroid != null) {
                 videoCapturerAndroid.startCapture(VIDEO_RESOLUTION_WIDTH, VIDEO_RESOLUTION_HEIGHT, FPS);
             }
-
-//            surfaceView1.setVisibility(View.VISIBLE);
-            // And finally, with our VideoRenderer ready, we
-            // can add our renderer to the VideoTrack.
+            //add our renderer to the VideoTrack.
             localVideoTrack.addSink(surfaceView1);
 
-//            surfaceView1.setMirror(true);
-//            remoteVideoView.setMirror(true);
+            surfaceView1.setMirror(true);
 
-//            createVideoTrackFromCameraAndShowIt();
         } else {
             EasyPermissions.requestPermissions(this, "Need some permissions", RC_CALL, perms);
         }
+    }
+
+    private void getIceServers() {
+
+        peerIceServers.add(new PeerConnection.IceServer("stun:stun.l.google.com:19302"));
+        peerIceServers.add(new PeerConnection.IceServer("stun1.l.google.com:19302"));
+        peerIceServers.add(new PeerConnection.IceServer("stun2.l.google.com:19302"));
+        peerIceServers.add(new PeerConnection.IceServer("stun3.l.google.com:19302"));
+    }
+
+
+    //create peer connection
+    private void createPeerConnection(){
+        PeerConnection.RTCConfiguration rtcConfig =
+                new PeerConnection.RTCConfiguration(peerIceServers);
+
+        rtcConfig.tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.DISABLED;
+        rtcConfig.bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE;
+        rtcConfig.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE;
+        rtcConfig.continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY;
+        // Use ECDSA encryption.
+        rtcConfig.keyType = PeerConnection.KeyType.ECDSA;
+
+        localpeer = peerConnectionFactory.createPeerConnection(rtcConfig,new CustomPeerConnectionObserver("localPeerCreation"){
+            @Override
+            public void onIceCandidate(IceCandidate iceCandidate) {
+                super.onIceCandidate(iceCandidate);
+            }
+
+            @Override
+            public void onAddStream(MediaStream mediaStream) {
+                super.onAddStream(mediaStream);
+                Toast.makeText(SecondScreen.this, "Recived remote stream!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+
+        addStreamToLocalPeer();
+
+    }
+
+    private void addStreamToLocalPeer() {
+        MediaStream stream = peerConnectionFactory.createLocalMediaStream("102");
+        stream.addTrack(localAudioTrack);
+        stream.addTrack(localVideoTrack);
+        localpeer.addStream(stream);
     }
 
 
@@ -275,7 +328,6 @@ public class SecondScreen extends AppCompatActivity {
         final String[] deviceNames = enumerator.getDeviceNames();
 
 
-//         First, try to find front facing camera
         Logging.d(TAG, "Looking for front facing cameras.");
         for (String deviceName : deviceNames) {
             if (enumerator.isFrontFacing(deviceName)) {
@@ -290,7 +342,6 @@ public class SecondScreen extends AppCompatActivity {
             }
         }
 
-//         First, try to find front facing camera
         Logging.d(TAG, "Looking for front facing cameras.");
         for (String deviceName : deviceNames) {
             if (!enumerator.isFrontFacing(deviceName)) {
@@ -310,4 +361,75 @@ public class SecondScreen extends AppCompatActivity {
     }
 
 
+
+
+
+    @Override
+    public void onRemoteHangUp(String msg) {
+
+    }
+
+    @Override
+    public void onOfferReceived(JSONObject data) {
+
+    }
+
+    @Override
+    public void onAnswerReceived(JSONObject data) {
+
+    }
+
+    @Override
+    public void onIceCandidateReceived(JSONObject data) {
+
+    }
+
+    @Override
+    public void onTryToStart() {
+
+        runOnUiThread(() -> {
+            if (!SignallingClient.getInstance().isStarted && localVideoTrack != null && SignallingClient.getInstance().isChannelReady) {
+                createPeerConnection();
+                SignallingClient.getInstance().isStarted = true;
+                if (SignallingClient.getInstance().isInitiator) {
+                    doCall();
+                }
+            }
+        });
+
+    }
+
+    private void doCall() {
+        sdpConstraints = new MediaConstraints();
+        sdpConstraints.mandatory.add(
+                new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"));
+        sdpConstraints.mandatory.add(
+                new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
+
+        localpeer.createOffer(new CustomSdpObserver(){
+            @Override
+            public void onCreateSuccess(SessionDescription sessionDescription) {
+                super.onCreateSuccess(sessionDescription);
+                //TODO add local stream in local peer.
+            }
+        },sdpConstraints);
+    }
+
+
+
+    @Override
+    public void onCreatedRoom() {
+
+
+    }
+
+    @Override
+    public void onJoinedRoom() {
+
+    }
+
+    @Override
+    public void onNewPeerJoined() {
+
+    }
 }

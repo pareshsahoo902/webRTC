@@ -9,6 +9,14 @@ import org.webrtc.RtpReceiver;
 public class CustomPeerConnectionObserver implements PeerConnection.Observer {
 
 
+    private String logTag;
+
+    public CustomPeerConnectionObserver(String logTag) {
+        this.logTag = this.getClass().getCanonicalName();
+        this.logTag = this.logTag+" "+logTag;
+    }
+
+
     @Override
     public void onSignalingChange(PeerConnection.SignalingState signalingState) {
 
