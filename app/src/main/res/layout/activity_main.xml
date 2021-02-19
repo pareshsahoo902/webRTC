@@ -31,6 +31,7 @@
             android:layout_height="wrap_content"
             android:hint="Enter Your Name"
             android:textColor="@color/purple_700"
+            android:text="paresh"
             android:textSize="18dp" />
 
     </com.google.android.material.textfield.TextInputLayout>
@@ -57,6 +58,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter Room ID"
+            android:text="pharos"
             android:textColor="@color/purple_700"
             android:textSize="18dp" />
 

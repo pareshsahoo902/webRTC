@@ -12,204 +12,129 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/purple_700"
-            app:popupTheme="@style/Widget.AppCompat.PopupMenu.Overflow">
-
-            <TextView
-                android:id="@+id/roomid"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal|start"
-                android:text="roomid"
-                android:textColor="@color/white"
-                android:textSize="16dp" />
-
-            <ImageView
-                android:id="@+id/menu"
-                android:layout_width="40dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center_vertical|end"
-                android:layout_marginRight="10dp"
-                android:background="?attr/selectableItemBackground"
-                android:padding="5dp"
-                android:src="@drawable/menu"
-                android:tint="@color/white" />
-        </androidx.appcompat.widget.Toolbar>
 
 
     </com.google.android.material.appbar.AppBarLayout>
 
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="3"
+        android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_margin="10dp"
-            android:layout_weight="2.3"
-            android:orientation="vertical"
-            android:weightSum="2"
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             >
-
-            <FrameLayout
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/surface_view"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_marginBottom="15dp"
-                android:layout_weight="1.9">
-
-                <org.webrtc.SurfaceViewRenderer
-                    android:id="@+id/surface_view1"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    tools:ignore="MissingClass" />
+                android:layout_height="match_parent"
+                tools:ignore="MissingClass"/>
+        </FrameLayout>
 
 
-                <TextView
-                    android:id="@+id/local_name"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|end"
-                    android:layout_margin="16dp"
-                    android:text="Local Feed"
-                    android:textColor="#fff" />
-            </FrameLayout>
 
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+        <include layout="@layout/new_view"
+            android:layout_width="100dp"
+            android:layout_height="140dp"
+            android:layout_alignParentRight="true"
+            android:layout_margin="15dp"
+            />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="10dp"
+            android:elevation="20dp">
+
+            <LinearLayout
+                android:layout_width="197dp"
+                android:layout_height="71dp"
                 android:layout_gravity="center_horizontal"
-                android:layout_weight="0.1"
-                android:elevation="20dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:gravity="center"
-                    android:orientation="horizontal"
-                    android:padding="10dp"
-                    android:weightSum="3">
-
-                    <androidx.cardview.widget.CardView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_marginRight="20dp"
-                        android:layout_weight="1"
-                        android:elevation="7dp"
-                        app:cardBackgroundColor="@color/purple_700"
-                        app:cardCornerRadius="55dp">
-
-                        <ImageView
-                            android:id="@+id/togglemic"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:padding="3dp"
-                            android:src="@drawable/mute"
-                            android:tint="@color/white" />
-                    </androidx.cardview.widget.CardView>
-
-                    <androidx.cardview.widget.CardView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_marginRight="20dp"
-                        android:layout_weight="1"
-                        android:elevation="7dp"
-                        app:cardBackgroundColor="@color/purple_700"
-                        app:cardCornerRadius="55dp">
-
-                        <ImageView
-                            android:id="@+id/flip_cam"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:padding="7dp"
-                            android:src="@drawable/flip_cam"
-                            android:tint="@color/white" />
-                    </androidx.cardview.widget.CardView>
-
-                    <androidx.cardview.widget.CardView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
-                        android:elevation="7dp"
-                        app:cardBackgroundColor="@color/purple_700"
-                        app:cardCornerRadius="55dp">
-
-                        <ImageView
-                            android:id="@+id/toggle_video"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:padding="3dp"
-                            android:src="@drawable/novideo"
-                            android:tint="@color/white" />
-                    </androidx.cardview.widget.CardView>
-                </LinearLayout>
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="10dp"
+                android:weightSum="3">
 
                 <androidx.cardview.widget.CardView
-                    android:layout_width="55dp"
-                    android:layout_height="55dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="60dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_weight="1"
                     android:elevation="7dp"
-                    app:cardBackgroundColor="@android:color/holo_red_dark"
+                    app:cardBackgroundColor="@color/purple_700"
                     app:cardCornerRadius="55dp">
 
                     <ImageView
-                        android:id="@+id/hangup"
+                        android:id="@+id/togglemic"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:layout_gravity="center"
-                        android:padding="8dp"
-                        android:src="@drawable/hangup"
+                        android:padding="3dp"
+                        android:src="@drawable/mute"
                         android:tint="@color/white" />
                 </androidx.cardview.widget.CardView>
 
+                <androidx.cardview.widget.CardView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_weight="1"
+                    android:elevation="7dp"
+                    app:cardBackgroundColor="@color/purple_700"
+                    app:cardCornerRadius="55dp">
 
-            </FrameLayout>
+                    <ImageView
+                        android:id="@+id/flip_cam"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="7dp"
+                        android:src="@drawable/flip_cam"
+                        android:tint="@color/white" />
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:elevation="7dp"
+                    app:cardBackgroundColor="@color/purple_700"
+                    app:cardCornerRadius="55dp">
+
+                    <ImageView
+                        android:id="@+id/toggle_video"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="3dp"
+                        android:src="@drawable/novideo"
+                        android:tint="@color/white" />
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="55dp"
+                android:layout_height="55dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="60dp"
+                android:elevation="7dp"
+                app:cardBackgroundColor="@android:color/holo_red_dark"
+                app:cardCornerRadius="55dp">
+
+                <ImageView
+                    android:id="@+id/hangup"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center"
+                    android:padding="8dp"
+                    android:src="@drawable/hangup"
+                    android:tint="@color/white" />
+            </androidx.cardview.widget.CardView>
 
 
-        </LinearLayout>
-
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.7">
-
-            <org.webrtc.SurfaceViewRenderer
-                android:id="@+id/remotesurfaceview"
-                android:layout_width="match_parent"
-                android:layout_height="130dp"
-                android:layout_marginTop="30dp"/>
-
-            <TextView
-                android:id="@+id/peer_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="50dp"
-                android:layout_marginLeft="10dp"
-                android:text="peer conn"
-                android:textSize="14dp"
-                />
-
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/surfaceviewRecycler"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone"
-                tools:listitem="@layout/new_view" />
         </FrameLayout>
-    </LinearLayout>
+    </RelativeLayout>
 
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
