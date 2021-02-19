@@ -350,6 +350,7 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
             @Override
             public void onAddStream(MediaStream mediaStream) {
                 super.onAddStream(mediaStream);
+
                 Toast.makeText(SecondScreen.this, "Recived remote stream!", Toast.LENGTH_SHORT).show();
                 gotRemoteStream(mediaStream);
             }
