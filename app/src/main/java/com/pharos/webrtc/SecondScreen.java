@@ -103,11 +103,6 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
         setContentView(R.layout.video_calling_activity);
         roomID = getIntent().getStringExtra("roomid");
         name = getIntent().getStringExtra("name");
-//        roomidText = findViewById(R.id.roomid);
-//        local_peername = findViewById(R.id.local_name);
-//        roomidText.setText(roomID);
-//        local_peername.setText("Me:" + name);
-
 
 
         init();
@@ -219,6 +214,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
 
 
     private void initVideos() {
+
+        Log.v("paresh","init vide view");
         rootEglBase = EglBase.create();
         surfaceView1.init(rootEglBase.getEglBaseContext(), null);
         surfaceView1.setZOrderMediaOverlay(true);
@@ -239,8 +236,9 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
             Toast.makeText(this, "Granted", Toast.LENGTH_SHORT).show();
             initVideos();
             getIceServers();
+            Log.v("paresh","peerConnection INit");
 
-            SignallingClient.getInstance().init(this,name);
+            SignallingClient.getInstance().init(this,name,getApplicationContext());
 
             //Initialize PeerConnectionFactory globals.
             PeerConnectionFactory.InitializationOptions initializationOptions =
@@ -284,6 +282,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
                 videoCapturerAndroid.startCapture(VIDEO_RESOLUTION_WIDTH, VIDEO_RESOLUTION_HEIGHT, FPS);
             }
             //add our renderer to the VideoTrack.
+            Log.v("paresh","added local feed in camera");
+
             localVideoTrack.addSink(remotesurface);
 //            localVideoTrack.addSink(surfaceView1);
 //
@@ -300,6 +300,7 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     }
 
     private void getIceServers() {
+        Log.v("paresh","getting ice server");
 
         peerIceServers.add(new PeerConnection.IceServer("stun:stun.l.google.com:19302"));
 
@@ -311,11 +312,9 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     public void onTryToStart() {
 
         runOnUiThread(() -> {
-            Toast.makeText(this, "tryToStart", Toast.LENGTH_SHORT).show();
             if (!SignallingClient.getInstance().isStarted && localVideoTrack != null && SignallingClient.getInstance().isChannelReady) {
                 createPeerConnection();
-                Toast.makeText(this, "tryToStart", Toast.LENGTH_SHORT).show();
-
+                Log.v("paresh","trying to start");
 
                 if (SignallingClient.getInstance().isInitiator) {
                     doCall();
@@ -339,18 +338,23 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
         // Use ECDSA encryption.
         rtcConfig.keyType = PeerConnection.KeyType.ECDSA;
 
+        Log.v("paresh","created peer connection");
+
         localpeer = peerConnectionFactory.createPeerConnection(rtcConfig, new CustomPeerConnectionObserver("localPeerCreation") {
             @Override
             public void onIceCandidate(IceCandidate iceCandidate) {
                 super.onIceCandidate(iceCandidate);
                 //add ice candiadate
+                Log.v("paresh","generated ice candidate");
+
                 onIceCandidateReceived(iceCandidate);
             }
 
             @Override
             public void onAddStream(MediaStream mediaStream) {
                 super.onAddStream(mediaStream);
-                Toast.makeText(SecondScreen.this, "Recived remote stream!", Toast.LENGTH_SHORT).show();
+                Log.v("paresh","Remote stream recived");
+
                 gotRemoteStream(mediaStream);
             }
         });
@@ -360,6 +364,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     }
 
     private void addStreamToLocalPeer() {
+        Log.v("paresh","adding stream to local peer");
+
         MediaStream stream = peerConnectionFactory.createLocalMediaStream("102");
         stream.addTrack(localAudioTrack);
         stream.addTrack(localVideoTrack);
@@ -372,6 +378,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
                 new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"));
         sdpConstraints.mandatory.add(
                 new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
+
+        Log.v("paresh","Creating offer-------------------------------------------");
 
         localpeer.createOffer(new CustomSdpObserver() {
             @Override
@@ -390,6 +398,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
 
     public void onIceCandidateReceived(IceCandidate iceCandidate) {
         //we have received ice candidate. We can set it to the other peer.
+        Log.v("paresh","Sending Ice Candidate-----------------------------------------------------------------------");
+
         SignallingClient.getInstance().sendIceCandidate(iceCandidate);
     }
 
@@ -403,6 +413,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
             }
 
             try {
+                Log.v("paresh","setting remote description=-----------------------------------------");
+
                 localpeer.setRemoteDescription(new CustomSdpObserver(), new SessionDescription(SessionDescription.Type.OFFER, data.getString("sdp")));
                 doAnswer();
             } catch (JSONException e) {
@@ -413,6 +425,9 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     }
 
     private void doAnswer() {
+
+        Log.v("paresh","creating answer=------------------------------------------------------------------");
+
         localpeer.createAnswer(new CustomSdpObserver() {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
@@ -427,9 +442,9 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
 
     @Override
     public void onAnswerReceived(JSONObject data) {
-        Toast.makeText(this, "Recived Answer", Toast.LENGTH_SHORT).show();
-
         try {
+            Log.v("paresh","set remote description on Answer recived ==============-===================================");
+
             localpeer.setRemoteDescription(new CustomSdpObserver(),
                     new SessionDescription(Type.fromCanonicalForm(data.getString("type").toLowerCase())
                             , data.getString("sdp")));
@@ -440,16 +455,13 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     }
 
     @Override
-    public void onIceCandidateReceived(JSONObject data) {
+    public void onIceCandidateReceived(String data, int label, String id) {
+        Log.v("paresh","Recived and adding ice candidate===============----------------------==============================");
 
-        try {
-            localpeer.addIceCandidate(new IceCandidate(data.getString("id"), data.getInt("label"), data.getString("candidate")));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+
+            localpeer.addIceCandidate(new IceCandidate(id, label, data));
+
     }
-
-
 
     private void gotRemoteStream(MediaStream stream) {
         //we have remote video stream. add to the renderer.
@@ -459,6 +471,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
             @Override
             public void run() {
                 try {
+                    Log.v("paresh","adding remote stream to surface view =================--------------------===========");
+
                     videoTrack.addSink(surfaceView1);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -467,9 +481,6 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
         });
 
     }
-
-
-
 
     @Override
     public void onRemoteHangUp(String msg) {

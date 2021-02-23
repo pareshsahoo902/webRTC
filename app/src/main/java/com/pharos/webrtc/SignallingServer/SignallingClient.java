@@ -1,5 +1,7 @@
 package com.pharos.webrtc.SignallingServer;
 
+import android.content.Context;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,10 +24,11 @@ public class SignallingClient {
 
     private static SignallingClient instance;
     private static DatabaseReference dbRef;
-    private String roomName = null,userName=null;
+    private String roomName = null, userName = null;
     public boolean isChannelReady = false;
     public boolean isInitiator = false;
     public boolean isStarted = false;
+    private Context mContext;
 
     private SignalingInterface callback;
 
@@ -41,13 +44,13 @@ public class SignallingClient {
         return instance;
     }
 
+    public void init(SignalingInterface signalingInterface, String name, Context context) {
 
-    public void init(SignalingInterface signalingInterface,String name){
-
-        this.callback=signalingInterface;
-        this.userName=name;
-        isChannelReady=true;
-        isInitiator=true;
+        this.callback = signalingInterface;
+        this.userName = name;
+        isChannelReady = true;
+        isInitiator = true;
+        this.mContext = context;
         dbRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomName);
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -55,49 +58,58 @@ public class SignallingClient {
 
                 if (snapshot.exists()) {
                     callback.onJoinedRoom();
-                    if (!snapshot.child("sender").getValue().equals(name)) {
-                        callback.onNewPeerJoined();
-                        isChannelReady=true;
-                        //TODO on ICe Candidate Recived
 
-                        if (snapshot.child("type").getValue().equals("candidate")) {
-                            String data = snapshot.child("data").getValue().toString();
-                            try {
-                                callback.onIceCandidateReceived(new JSONObject(data));
-                            } catch (JSONException e) {
-                                e.printStackTrace();
+                    for (DataSnapshot user : snapshot.getChildren()) {
+                        String Uname = (String) user.child("sender").getValue();
+                        String type = (String) user.child("type").getValue();
+                        Log.v("paresh", type);
+                        if (!Uname.equals(name)) {
+                            callback.onNewPeerJoined();
+                            isChannelReady = true;
+                            //TODO on ICe Candidate Recived
+
+                            if (type.equals("candidate")) {
+                                Log.v("paresh", user.child("candidate").getValue().toString());
+
+                                String data = user.child("candidate").getValue().toString();
+                                Integer label = Integer.parseInt(user.child("label").getValue().toString());
+                                String id = user.child("id").getValue().toString();
+                                callback.onIceCandidateReceived(data, label, id);
+
                             }
-                        }
+
+                            //on TODO Answer Recived....
+                            else if (type.equals("amswer")) {
+                                    Log.v("paresh", user.child("answer").getValue().toString());
+
+                                    String data = user.child("answer").getValue().toString();
+                                    try {
+                                        callback.onAnswerReceived(new JSONObject(data));
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
 
 
-                        //on TODO Answer Recived....
-                        else if (snapshot.child("type").getValue().equals("amswer")) {
-                            String data = snapshot.child("data").getValue().toString();
-                            try {
-                                callback.onAnswerReceived(new JSONObject(data));
-                            } catch (JSONException e) {
-                                e.printStackTrace();
                             }
-                        }
 
 
-                        //TODO on Offer recived....
-                        else if (snapshot.child("type").getValue().equals("offer")) {
-                            String data = snapshot.child("data").getValue().toString();
-                            try {
-                                callback.onOfferReceived(new JSONObject(data));
-                            } catch (JSONException e) {
-                                e.printStackTrace();
+                            //TODO on Offer recived....
+                            else if (type.equals("offer")) {
+                                    Log.v("paresh", user.child("offer").getValue().toString());
+                                    String data = user.child("offer").getValue().toString();
+                                    try {
+                                        callback.onOfferReceived(new JSONObject(data));
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+
+                            } else {
+                                callback.onRemoteHangUp(name);
                             }
-                        }
-
-                        else {
-                            callback.onRemoteHangUp(name);
                         }
                     }
-                }
-                else {
-                    callback.onCreatedRoom();
+
+
                 }
             }
 
@@ -111,23 +123,22 @@ public class SignallingClient {
     }
 
 
-    public void sendMessage(SessionDescription message){
+    public void sendMessage(SessionDescription message) {
 
-        if (message.type.canonicalForm().equals("offer")){
-            doOffer(userName,message.description);
-        }
-        else if (message.type.canonicalForm().equals("answer")){
-            doAnswer(userName,message.description);
+        if (message.type.canonicalForm().equals("offer")) {
+            doOffer(userName, message.description);
+        } else if (message.type.canonicalForm().equals("answer")) {
+            doAnswer(userName, message.description);
         }
 
     }
 
     public void doOffer(String username, String description) {
         // send offer request with the name of the user
-        HashMap<String,Object> hashMap=new HashMap<>();
-        hashMap.put("type","offer");
-        hashMap.put("sdp",description);
-        hashMap.put("sender",username);
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("type", "offer");
+        hashMap.put("sdp", description);
+        hashMap.put("sender", username);
 
         dbRef.child(username).updateChildren(hashMap);
 
@@ -137,10 +148,10 @@ public class SignallingClient {
     public void doAnswer(String username, String description) {
         // create answer with the name of the user
 
-        HashMap<String,Object> hashMap=new HashMap<>();
-        hashMap.put("type","answer");
-        hashMap.put("sdp",description);
-        hashMap.put("sender",username);
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("type", "answer");
+        hashMap.put("sdp", description);
+        hashMap.put("sender", username);
 
         dbRef.child(username).updateChildren(hashMap);
 
@@ -150,12 +161,12 @@ public class SignallingClient {
     public void sendIceCandidate(IceCandidate iceCandidate) {
         // create and add candidate with the name of the user
 
-        HashMap<String,Object> hashMap=new HashMap<>();
-        hashMap.put("type","candidate");
-        hashMap.put("label",iceCandidate.sdpMLineIndex);
-        hashMap.put("id",iceCandidate.sdpMid);
-        hashMap.put("candidate",iceCandidate.sdp);
-        hashMap.put("sender",userName);
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("type", "candidate");
+        hashMap.put("label", iceCandidate.sdpMLineIndex);
+        hashMap.put("id", iceCandidate.sdpMid);
+        hashMap.put("candidate", iceCandidate.sdp);
+        hashMap.put("sender", userName);
 
         dbRef.child(userName).updateChildren(hashMap);
 
@@ -176,7 +187,7 @@ public class SignallingClient {
 
         void onAnswerReceived(JSONObject data);
 
-        void onIceCandidateReceived(JSONObject data);
+        void onIceCandidateReceived(String data, int label, String id);
 
         void onTryToStart();
 
