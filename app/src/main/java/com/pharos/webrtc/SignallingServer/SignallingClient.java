@@ -18,8 +18,7 @@ import org.webrtc.IceCandidate;
 import org.webrtc.SessionDescription;
 
 import java.util.HashMap;
-//firebase is used as the Signalling client here REALTIME DATABSE
-
+//firebase is used as the Signalling client here REALTIME DATABASE
 public class SignallingClient {
 
     private static SignallingClient instance;
@@ -44,6 +43,7 @@ public class SignallingClient {
         return instance;
     }
 
+
     public void init(SignalingInterface signalingInterface, String name, Context context) {
 
         this.callback = signalingInterface;
@@ -62,46 +62,27 @@ public class SignallingClient {
                     for (DataSnapshot user : snapshot.getChildren()) {
                         String Uname = (String) user.child("sender").getValue();
                         String type = (String) user.child("type").getValue();
-                        Log.v("paresh", type);
+                        Log.v("paresh", type+"type reciveede in firebase");
                         if (!Uname.equals(name)) {
                             callback.onNewPeerJoined();
                             isChannelReady = true;
-                            //TODO on ICe Candidate Recived
-
                             if (type.equals("candidate")) {
-                                Log.v("paresh", user.child("candidate").getValue().toString());
 
-                                String data = user.child("candidate").getValue().toString();
+                                String data = user.child("sdp").getValue().toString();
                                 Integer label = Integer.parseInt(user.child("label").getValue().toString());
                                 String id = user.child("id").getValue().toString();
                                 callback.onIceCandidateReceived(data, label, id);
 
                             }
-
-                            //on TODO Answer Recived....
                             else if (type.equals("amswer")) {
-                                    Log.v("paresh", user.child("answer").getValue().toString());
 
-                                    String data = user.child("answer").getValue().toString();
-                                    try {
-                                        callback.onAnswerReceived(new JSONObject(data));
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
-                                    }
-
+                                    String data = user.child("sdp").getValue().toString();
+                                        callback.onAnswerReceived(data);
 
                             }
-
-
-                            //TODO on Offer recived....
                             else if (type.equals("offer")) {
-                                    Log.v("paresh", user.child("offer").getValue().toString());
-                                    String data = user.child("offer").getValue().toString();
-                                    try {
-                                        callback.onOfferReceived(new JSONObject(data));
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
-                                    }
+                                    String data = user.child("sdp").getValue().toString();
+                                        callback.onOfferReceived(data);
 
                             } else {
                                 callback.onRemoteHangUp(name);
@@ -130,7 +111,6 @@ public class SignallingClient {
         } else if (message.type.canonicalForm().equals("answer")) {
             doAnswer(userName, message.description);
         }
-
     }
 
     public void doOffer(String username, String description) {
@@ -139,7 +119,6 @@ public class SignallingClient {
         hashMap.put("type", "offer");
         hashMap.put("sdp", description);
         hashMap.put("sender", username);
-
         dbRef.child(username).updateChildren(hashMap);
 
     }
@@ -165,7 +144,7 @@ public class SignallingClient {
         hashMap.put("type", "candidate");
         hashMap.put("label", iceCandidate.sdpMLineIndex);
         hashMap.put("id", iceCandidate.sdpMid);
-        hashMap.put("candidate", iceCandidate.sdp);
+        hashMap.put("sdp", iceCandidate.sdp);
         hashMap.put("sender", userName);
 
         dbRef.child(userName).updateChildren(hashMap);
@@ -175,17 +154,17 @@ public class SignallingClient {
 
     public void doHangup(String username) {
         // end the call
-
-        callback.onRemoteHangUp(username);
+        dbRef.child(username).removeValue();
+        dbRef=null;
 
     }
 
     public interface SignalingInterface {
         void onRemoteHangUp(String msg);
 
-        void onOfferReceived(JSONObject data);
+        void onOfferReceived(String data);
 
-        void onAnswerReceived(JSONObject data);
+        void onAnswerReceived( String sdp);
 
         void onIceCandidateReceived(String data, int label, String id);
 

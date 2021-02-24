@@ -69,7 +69,6 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     private Boolean mute = true, videoOn = false, front_cam = true;
     private ImageView rotate_cam, mute_unmute, videoon_off, hangup, menu;
 
-
     PeerConnection localpeer;
     private EglBase rootEglBase;
 
@@ -92,7 +91,6 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     List<PeerConnection.IceServer> peerIceServers = new ArrayList<>();
 
     final int ALL_PERMISSIONS_CODE = 1;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -179,25 +177,21 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     }
 
     private void muteAudio() {
-
         //TODO mute audiostream on button click
     }
 
     private void unmuteAudio() {
         //TODO enable audiostream on button click
 
-
     }
 
     private void turnOnVideo() {
         //TODO enable videostream on button click
 
-
     }
 
     private void turnOffVideo() {
         //TODO disable videostream on button click
-
 
     }
 
@@ -215,7 +209,6 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
 
     private void initVideos() {
 
-        Log.v("paresh","init vide view");
         rootEglBase = EglBase.create();
         surfaceView1.init(rootEglBase.getEglBaseContext(), null);
         surfaceView1.setZOrderMediaOverlay(true);
@@ -225,10 +218,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
         remotesurface.setZOrderMediaOverlay(true);
     }
 
-
     @AfterPermissionGranted(RC_CALL)
     private void start() {
-
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         String[] perms = {Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO};
@@ -236,9 +227,9 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
             Toast.makeText(this, "Granted", Toast.LENGTH_SHORT).show();
             initVideos();
             getIceServers();
-            Log.v("paresh","peerConnection INit");
+            Log.v("paresh", "peerConnection Init");
 
-            SignallingClient.getInstance().init(this,name,getApplicationContext());
+            SignallingClient.getInstance().init(this, name, getApplicationContext());
 
             //Initialize PeerConnectionFactory globals.
             PeerConnectionFactory.InitializationOptions initializationOptions =
@@ -282,11 +273,10 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
                 videoCapturerAndroid.startCapture(VIDEO_RESOLUTION_WIDTH, VIDEO_RESOLUTION_HEIGHT, FPS);
             }
             //add our renderer to the VideoTrack.
-            Log.v("paresh","added local feed in camera");
+            Log.v("paresh", "added local feed in camera");
 
             localVideoTrack.addSink(remotesurface);
-//            localVideoTrack.addSink(surfaceView1);
-//
+
             remotesurface.setMirror(true);
             surfaceView1.setMirror(true);
 
@@ -300,12 +290,10 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     }
 
     private void getIceServers() {
-        Log.v("paresh","getting ice server");
-
+        Log.v("paresh", "getting ice server");
         peerIceServers.add(new PeerConnection.IceServer("stun:stun.l.google.com:19302"));
 
     }
-
 
 
     @Override
@@ -314,8 +302,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
         runOnUiThread(() -> {
             if (!SignallingClient.getInstance().isStarted && localVideoTrack != null && SignallingClient.getInstance().isChannelReady) {
                 createPeerConnection();
-                Log.v("paresh","trying to start");
-
+                Log.v("paresh", "trying to start");
+                Log.v("paresh", localpeer.toString());
                 if (SignallingClient.getInstance().isInitiator) {
                     doCall();
                 }
@@ -338,23 +326,21 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
         // Use ECDSA encryption.
         rtcConfig.keyType = PeerConnection.KeyType.ECDSA;
 
-        Log.v("paresh","created peer connection");
+        Log.v("paresh", "created peer connection");
 
         localpeer = peerConnectionFactory.createPeerConnection(rtcConfig, new CustomPeerConnectionObserver("localPeerCreation") {
             @Override
             public void onIceCandidate(IceCandidate iceCandidate) {
                 super.onIceCandidate(iceCandidate);
                 //add ice candiadate
-                Log.v("paresh","generated ice candidate");
-
+                Log.v("paresh", "generated ice candidate");
                 onIceCandidateReceived(iceCandidate);
             }
 
             @Override
             public void onAddStream(MediaStream mediaStream) {
                 super.onAddStream(mediaStream);
-                Log.v("paresh","Remote stream recived");
-
+                Log.v("paresh", "Remote stream recived");
                 gotRemoteStream(mediaStream);
             }
         });
@@ -364,11 +350,10 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     }
 
     private void addStreamToLocalPeer() {
-        Log.v("paresh","adding stream to local peer");
-
         MediaStream stream = peerConnectionFactory.createLocalMediaStream("102");
         stream.addTrack(localAudioTrack);
         stream.addTrack(localVideoTrack);
+        Log.v("paresh", "adding stream to local peer");
         localpeer.addStream(stream);
     }
 
@@ -378,62 +363,49 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
                 new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"));
         sdpConstraints.mandatory.add(
                 new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
-
-        Log.v("paresh","Creating offer-------------------------------------------");
+        Log.v("paresh", "Creating offer-------------------------------------------");
 
         localpeer.createOffer(new CustomSdpObserver() {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
                 super.onCreateSuccess(sessionDescription);
-                //TODO add local stream in local peer.
                 localpeer.setLocalDescription(new CustomSdpObserver(), sessionDescription);
-                Log.d("onCreateSuccess", "SignallingClient emit ");
+                Log.v("paresh", "SignallingClient emit ");
                 SignallingClient.getInstance().sendMessage(sessionDescription);
 
             }
         }, sdpConstraints);
     }
 
-
-
     public void onIceCandidateReceived(IceCandidate iceCandidate) {
         //we have received ice candidate. We can set it to the other peer.
-        Log.v("paresh","Sending Ice Candidate-----------------------------------------------------------------------");
+        Log.v("paresh", "Sending Ice Candidate-----------------------------------------------------------------------");
 
         SignallingClient.getInstance().sendIceCandidate(iceCandidate);
     }
 
 
     @Override
-    public void onOfferReceived(JSONObject data) {
-
+    public void onOfferReceived(String data) {
         runOnUiThread(() -> {
             if (!SignallingClient.getInstance().isInitiator && !SignallingClient.getInstance().isStarted) {
                 onTryToStart();
             }
+            Log.v("paresh", "setting remote description=-----------------------------------------");
+            localpeer.setRemoteDescription(new CustomSdpObserver(), new SessionDescription(Type.OFFER, data));
+            doAnswer();
 
-            try {
-                Log.v("paresh","setting remote description=-----------------------------------------");
-
-                localpeer.setRemoteDescription(new CustomSdpObserver(), new SessionDescription(SessionDescription.Type.OFFER, data.getString("sdp")));
-                doAnswer();
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
         });
-
     }
 
     private void doAnswer() {
-
-        Log.v("paresh","creating answer=------------------------------------------------------------------");
-
         localpeer.createAnswer(new CustomSdpObserver() {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
                 super.onCreateSuccess(sessionDescription);
+                Log.v("paresh", "creating answer=------------------------------------------------------------------");
                 localpeer.setLocalDescription(new CustomSdpObserver(), sessionDescription);
-                //TODO send data to firebase
+                Log.v("paresh", "sending answer--------------------------------------------------------------------");
                 SignallingClient.getInstance().sendMessage(sessionDescription);
 
             }
@@ -441,25 +413,18 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     }
 
     @Override
-    public void onAnswerReceived(JSONObject data) {
-        try {
-            Log.v("paresh","set remote description on Answer recived ==============-===================================");
+    public void onAnswerReceived(String sdp) {
+        Log.v("paresh", "set remote description on Answer recived ==============-===================================");
 
-            localpeer.setRemoteDescription(new CustomSdpObserver(),
-                    new SessionDescription(Type.fromCanonicalForm(data.getString("type").toLowerCase())
-                            , data.getString("sdp")));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        localpeer.setRemoteDescription(new CustomSdpObserver(),
+                new SessionDescription(Type.ANSWER, sdp));
 
     }
 
     @Override
     public void onIceCandidateReceived(String data, int label, String id) {
-        Log.v("paresh","Recived and adding ice candidate===============----------------------==============================");
-
-
-            localpeer.addIceCandidate(new IceCandidate(id, label, data));
+        localpeer.addIceCandidate(new IceCandidate(id, label, data));
+        Log.v("paresh", "Recived and adding ice candidate===============----------------------==============================");
 
     }
 
@@ -471,7 +436,7 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
             @Override
             public void run() {
                 try {
-                    Log.v("paresh","adding remote stream to surface view =================--------------------===========");
+                    Log.v("paresh", "adding remote stream to surface view =================--------------------===========");
 
                     videoTrack.addSink(surfaceView1);
                 } catch (Exception e) {
@@ -484,12 +449,10 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
 
     @Override
     public void onRemoteHangUp(String msg) {
-
+        SignallingClient.getInstance().doHangup(name);
         Toast.makeText(this, "No one there in the room !", Toast.LENGTH_SHORT).show();
 
     }
-
-
 
     //capturing video from the front or back cam...
     private VideoCapturer createCameraCapturer(CameraEnumerator enumerator) {
@@ -531,15 +494,12 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
 
     @Override
     public void onCreatedRoom() {
-
-
         Toast.makeText(this, "Room created", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onJoinedRoom() {
         Toast.makeText(this, "room joined!", Toast.LENGTH_SHORT).show();
-
     }
 
     @Override
@@ -550,6 +510,8 @@ public class SecondScreen extends AppCompatActivity implements SignallingClient.
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        onRemoteHangUp("hangup");
+        localpeer.close();
         if (surfaceTextureHelper != null) {
             surfaceTextureHelper.dispose();
             surfaceTextureHelper = null;
