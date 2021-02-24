@@ -126,7 +126,6 @@ public class SignallingClient {
 
     public void doAnswer(String username, String description) {
         // create answer with the name of the user
-
         HashMap<String, Object> hashMap = new HashMap<>();
         hashMap.put("type", "answer");
         hashMap.put("sdp", description);
